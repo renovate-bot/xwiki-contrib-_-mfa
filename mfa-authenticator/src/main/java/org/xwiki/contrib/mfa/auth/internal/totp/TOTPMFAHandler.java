@@ -17,12 +17,42 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+package org.xwiki.contrib.mfa.auth.internal.totp;
 
-// It's assumed that Jenkins has been configured to implicitly load the vars/xwikiModule.groovy library which exposes
-// the "xwikiModule" global function/DSL.
-// Note that the version used is the one defined in Jenkins but it can be overridden as follows:
-// @Library("XWiki@<branch, tag, sha1>") _
-// See https://github.com/jenkinsci/workflow-cps-global-lib-plugin for details.
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
-xwikiModule {
+import org.slf4j.Logger;
+import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.mfa.auth.MFAHandler;
+import org.xwiki.model.reference.DocumentReference;
+
+import com.xpn.xwiki.XWikiException;
+
+/**
+ * TOTP based implementation of {@link MFAHandler}.
+ * 
+ * @version $Id$
+ */
+@Component
+@Singleton
+public class TOTPMFAHandler implements MFAHandler
+{
+    @Inject
+    private TOTPStore store;
+
+    @Inject
+    private Logger logger;
+
+    @Override
+    public boolean isEnabled(DocumentReference userReference)
+    {
+        try {
+            return this.store.getSecret(userReference, true) != null;
+        } catch (XWikiException e) {
+            this.logger.error("Failed to get the TOTP secret for current user");
+
+            return false;
+        }
+    }
 }

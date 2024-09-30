@@ -1,0 +1,11 @@
+org.xwiki.contrib.mfa.auth.internal.MFABridgeAuthService
+org.xwiki.contrib.mfa.auth.internal.MFABridgeConfiguration
+org.xwiki.contrib.mfa.auth.internal.MFAConfiguration
+org.xwiki.contrib.mfa.auth.internal.MFAManager
+org.xwiki.contrib.mfa.auth.internal.resource.MFAResourceReferenceHandler
+org.xwiki.contrib.mfa.auth.internal.resource.MFAResourceReferenceResolver
+org.xwiki.contrib.mfa.auth.internal.totp.TOTPManager
+org.xwiki.contrib.mfa.auth.internal.totp.TOTPMFAHandler
+org.xwiki.contrib.mfa.auth.internal.totp.TOTPStore
+org.xwiki.contrib.mfa.auth.script.MFAScriptService
+org.xwiki.contrib.mfa.auth.script.TOTPScriptService

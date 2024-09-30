@@ -17,12 +17,26 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+package org.xwiki.contrib.mfa.auth;
 
-// It's assumed that Jenkins has been configured to implicitly load the vars/xwikiModule.groovy library which exposes
-// the "xwikiModule" global function/DSL.
-// Note that the version used is the one defined in Jenkins but it can be overridden as follows:
-// @Library("XWiki@<branch, tag, sha1>") _
-// See https://github.com/jenkinsci/workflow-cps-global-lib-plugin for details.
+import org.xwiki.contrib.mfa.auth.internal.MFABridgeAuthService;
+import org.xwiki.security.authservice.AbstractXWikiAuthServiceWrapper;
+import org.xwiki.security.authservice.XWikiAuthServiceComponent;
 
-xwikiModule {
+import com.xpn.xwiki.web.Utils;
+
+/**
+ * Block authentication with MFA.
+ * 
+ * @version $Id$
+ */
+public class MFABridgeAuth extends AbstractXWikiAuthServiceWrapper
+{
+    /**
+     * Initialize the wrapped authenticator.
+     */
+    public MFABridgeAuth()
+    {
+        super(Utils.getComponent(XWikiAuthServiceComponent.class, MFABridgeAuthService.ID));
+    }
 }

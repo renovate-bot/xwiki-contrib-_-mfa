@@ -1,0 +1,102 @@
+<?xml version="1.1" encoding="UTF-8"?>
+
+<!--
+ * See the NOTICE file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+-->
+
+<xwikidoc version="1.5" reference="XWiki.MFA.TOTP.Translations" locale="">
+  <web>XWiki.MFA.TOTP</web>
+  <name>Translations</name>
+  <language/>
+  <defaultLanguage>en</defaultLanguage>
+  <translation>0</translation>
+  <creator>xwiki:XWiki.Admin</creator>
+  <parent>WebHome</parent>
+  <author>xwiki:XWiki.Admin</author>
+  <contentAuthor>xwiki:XWiki.Admin</contentAuthor>
+  <version>1.1</version>
+  <title/>
+  <comment/>
+  <minorEdit>false</minorEdit>
+  <syntaxId>plain/1.0</syntaxId>
+  <hidden>true</hidden>
+  <content>mfa.totp.servicemissing=TOTP API service missing
+mfa.totp.activated=TOTP is ON
+mfa.totp.deactivated=TOTP is OFF
+mfa.totp.regenerate=Delete/Regenerate your TOTP Secret
+mfa.totp.activate=Activate TOTP
+mfa.totp.deactivate=Deactivate TOTP (your secret will not be deleted)
+mfa.totp.secret=TOTP Secret (for manual configuration)
+mfa.totp.profile.desc=Welcome to the TOTP Configuration. To configure TOTP you will need a Multi-Factor Authentication application. We can for example recommend:\r\n* [[Aegis&gt;&gt;url:https://getaegis.app/]] on Android\r\n* [[Ente Auth&gt;&gt;url:https://ente.io/auth/]] - Cross Platform\r\n* [[FreeOTP&gt;&gt;url:https://freeotp.github.io/]] - Android and iOS\r\n\r\nOnce you have an TOTP application and then scan the QRCode below using that application to store the TOTP Secret in the application. Finally you will need to verify the TOTP code to finalize the configuration.\r\n
+mfa.totp.profile.scan=Scan this bar code
+mfa.totp.verify=Verify
+mfa.totp.activation.success=Verification of TOTP has been successful. TOTP is activated.
+mfa.totp.activation.failed=Verification of TOTP has failed. TOTP is not activated.
+mfa.totp.verification.success=Verification of TOTP has been successful
+mfa.totp.verification.failed=Verification of TOTP has failed
+mfa.totp.regeneration.success=TOTP has been deactivated and TOTP secret has been deleted. You can now scan the new secret.
+mfa.totp.deactivation.success=TOTP has been deactivated. Your secret has not been deleted.
+mfa.totp.viewinuserprofile=This page should be viewed in the User Profile
+## Admin
+admin.mfa=Multi-Factor Authentication
+XWiki.MFA.TOTP.TOTPConfigClass_status=Status
+XWiki.MFA.TOTP.TOTPConfigClass_delay=Delay
+XWiki.MFA.TOTP.TOTPClass_status=TOTP Status
+XWiki.MFA.TOTP.TOTPClass_secret=TOTP Secret
+XWiki.MFA.TOTP.TOTPClass_recoverycode=Recovery Code
+platform.core.profile.category.totp=TOTP
+</content>
+  <object>
+    <name>XWiki.MFA.TOTP.Translations</name>
+    <number>0</number>
+    <className>XWiki.TranslationDocumentClass</className>
+    <guid>b11b0300-400e-4bce-b6b6-ac60afb4a4f5</guid>
+    <class>
+      <name>XWiki.TranslationDocumentClass</name>
+      <customClass/>
+      <customMapping/>
+      <defaultViewSheet/>
+      <defaultEditSheet/>
+      <defaultWeb/>
+      <nameField/>
+      <validationScript/>
+      <scope>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <freeText>forbidden</freeText>
+        <largeStorage>0</largeStorage>
+        <multiSelect>0</multiSelect>
+        <name>scope</name>
+        <number>1</number>
+        <prettyName>Scope</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators>|, </separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>GLOBAL|WIKI|USER|ON_DEMAND</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </scope>
+    </class>
+    <property>
+      <scope>WIKI</scope>
+    </property>
+  </object>
+</xwikidoc>

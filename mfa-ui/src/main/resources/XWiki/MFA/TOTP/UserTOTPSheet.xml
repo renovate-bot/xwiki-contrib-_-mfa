@@ -1,0 +1,515 @@
+<?xml version="1.1" encoding="UTF-8"?>
+
+<!--
+ * See the NOTICE file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+-->
+
+<xwikidoc version="1.5" reference="XWiki.MFA.TOTP.UserTOTPSheet" locale="">
+  <web>XWiki.MFA.TOTP</web>
+  <name>UserTOTPSheet</name>
+  <language/>
+  <defaultLanguage/>
+  <translation>0</translation>
+  <creator>xwiki:XWiki.Admin</creator>
+  <parent>WebHome</parent>
+  <author>xwiki:XWiki.Admin</author>
+  <contentAuthor>xwiki:XWiki.Admin</contentAuthor>
+  <version>1.1</version>
+  <title/>
+  <comment/>
+  <minorEdit>false</minorEdit>
+  <syntaxId>xwiki/2.1</syntaxId>
+  <hidden>true</hidden>
+  <content>{{groovy}}
+import java.security.SecureRandom;
+import java.util.Base64;
+import org.cryptacular.util.CodecUtil;
+import org.xwiki.velocity.tools.EscapeTool;
+
+if (request.deactivate) {
+   services.mfa.totp.storeStatus("off");
+   println """{{info}}${services.localization.render("mfa.totp.deactivation.success")}{{/info}}"""
+} else if (request.regenerate) {
+   services.mfa.totp.storeSecret("", "off");
+   println """{{info}}${services.localization.render("mfa.totp.regeneration.success")}{{/info}}"""
+} else if (request.activate) {
+  if (services.mfa.totp.validate(Integer.valueOf(request.totp), request.secret)) {
+   services.mfa.totp.storeSecret(request.secret, "on");
+   println """{{info}}${services.localization.render("mfa.totp.activation.success")}{{/info}}"""
+  } else {
+   println """{{error}}${services.localization.render("mfa.totp.activation.failed")}{{/error}}"""    
+  }
+} else if (request.verify) {
+  if (services.mfa.totp.validate(Integer.valueOf(request.totp))) {
+   println """{{info}}${services.localization.render("mfa.totp.verification.success")}{{/info}}"""
+  } else {
+   println """{{error}}${services.localization.render("mfa.totp.verification.failed")}{{/error}}"""    
+  }
+}
+
+if (services.mfa==null || services.mfa.totp==null) {
+  println services.localization.render("mfa.totp.servicemissing")
+} else if (doc.documentReference==xcontext.userReference) {
+
+  def escapetool = new org.xwiki.velocity.tools.EscapeTool();
+
+  // Insert JSCode for QRCodes
+  xwiki.jsx.use("XWiki.MFA.TOTP.UserTOTPSheet")
+  xwiki.ssx.use("XWiki.MFA.TOTP.UserTOTPSheet")
+
+  def status = services.mfa.totp.getStatus();
+
+  println services.localization.render("mfa.totp.profile.desc")
+  println "== ${services.localization.render("mfa.totp.profile.scan")} =="
+  
+  if (status=="on") {
+
+  println """
+  {{html clean="false"}}
+  &lt;div id="totpactions" class="col-sm-12"&gt;
+  &lt;h2&gt;${services.localization.render("mfa.totp.activated")}&lt;/h2&gt;
+  &lt;form action="" method="post"&gt;
+    &lt;input type="submit" class="button" name="deactivate" value="${escapetool.xml(services.localization.render("mfa.totp.deactivate"))}" /&gt;
+  &lt;/form&gt;
+  &lt;form action="" method="post"&gt;
+    &lt;input type="submit" class="button" name="regenerate" value="${escapetool.xml(services.localization.render("mfa.totp.regenerate"))}" /&gt;
+  &lt;/form&gt;
+  &lt;form action="" method="post"&gt;
+    ${services.localization.render("mfa.totp.verify")}: &lt;input type="text" size="6" name="totp" value="" /&gt;
+    &lt;input type="submit" class="button" name="verify" value="${escapetool.xml(services.localization.render("mfa.totp.verify"))}" /&gt;
+  &lt;/form&gt;
+  &lt;/div&gt;
+  {{/html}}
+  """
+  } else {
+  String totpSecret = request.secret ? request.secret : services.mfa.totp.getSecret();
+  if (totpSecret==null || totpSecret=="") {
+     totpSecret = services.mfa.totp.createSecret();
+  }
+  String totpURL = services.mfa.totp.getTOTPURL(totpSecret);
+  println """
+  {{html clean="false"}}
+  &lt;div id="totpqrcode" class="col-sm-3 col-xs-12"&gt;
+   &lt;div id="totpqrcodeimage"&gt;
+   &lt;/div&gt;
+   &lt;!--
+   &lt;div id="totpqrcodetext"&gt;
+   ${services.localization.render("mfa.totp.secret")}: ${totpSecret}
+   &lt;/div&gt;
+   --&gt;
+   &lt;div id="totpqrcodeurl" style="display: none;"&gt;
+   ${totpURL}
+   &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div id="totpactions" class="col-sm-9 col-xs-12"&gt;
+  &lt;h2&gt;${services.localization.render("mfa.totp.deactivated")}&lt;/h2&gt;
+  &lt;form action="" method="post"&gt;
+    ${services.localization.render("mfa.totp.verify")}: &lt;input type="text" size="6" name="totp" value="" /&gt;
+    &lt;input type="hidden" name="secret" value="${escapetool.xml(totpSecret)}" /&gt;
+    &lt;input type="submit" class="button" name="activate" value="${escapetool.xml(services.localization.render("mfa.totp.activate"))}" /&gt;
+  &lt;/form&gt;
+  &lt;/div&gt;
+  {{/html}}
+  """
+  }
+} else {
+ println services.localization.render("mfa.totp.viewinuserprofile")
+}
+{{/groovy}}
+</content>
+  <object>
+    <name>XWiki.MFA.TOTP.UserTOTPSheet</name>
+    <number>0</number>
+    <className>XWiki.JavaScriptExtension</className>
+    <guid>94a9e1b8-c4c0-418f-ba87-410743f0e7bc</guid>
+    <class>
+      <name>XWiki.JavaScriptExtension</name>
+      <customClass/>
+      <customMapping/>
+      <defaultViewSheet/>
+      <defaultEditSheet/>
+      <defaultWeb/>
+      <nameField/>
+      <validationScript/>
+      <cache>
+        <cache>0</cache>
+        <defaultValue>long</defaultValue>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <freeText>forbidden</freeText>
+        <largeStorage>0</largeStorage>
+        <multiSelect>0</multiSelect>
+        <name>cache</name>
+        <number>5</number>
+        <prettyName>Caching policy</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators>|, </separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>long|short|default|forbid</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </cache>
+      <code>
+        <contenttype>PureText</contenttype>
+        <disabled>0</disabled>
+        <editor>PureText</editor>
+        <name>code</name>
+        <number>2</number>
+        <prettyName>Code</prettyName>
+        <restricted>0</restricted>
+        <rows>20</rows>
+        <size>50</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </code>
+      <name>
+        <disabled>0</disabled>
+        <name>name</name>
+        <number>1</number>
+        <prettyName>Name</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </name>
+      <parse>
+        <disabled>0</disabled>
+        <displayFormType>select</displayFormType>
+        <displayType>yesno</displayType>
+        <name>parse</name>
+        <number>4</number>
+        <prettyName>Parse content</prettyName>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
+      </parse>
+      <use>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <freeText>forbidden</freeText>
+        <largeStorage>0</largeStorage>
+        <multiSelect>0</multiSelect>
+        <name>use</name>
+        <number>3</number>
+        <prettyName>Use this extension</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators>|, </separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>currentPage|onDemand|always</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </use>
+    </class>
+    <property>
+      <cache>long</cache>
+    </property>
+    <property>
+      <code>
+// JSX To Generate TOTP QRCode
+require(['jquery', 'qrcodejs'], function ($) {
+    console.log($('totpqrcode').val())
+    new window.QRCode('totpqrcodeimage', $('#totpqrcodeurl').text())
+});
+</code>
+    </property>
+    <property>
+      <name/>
+    </property>
+    <property>
+      <parse/>
+    </property>
+    <property>
+      <use/>
+    </property>
+  </object>
+  <object>
+    <name>XWiki.MFA.TOTP.UserTOTPSheet</name>
+    <number>0</number>
+    <className>XWiki.StyleSheetExtension</className>
+    <guid>088c1ef8-989c-42a4-a60e-a3b8418db833</guid>
+    <class>
+      <name>XWiki.StyleSheetExtension</name>
+      <customClass/>
+      <customMapping/>
+      <defaultViewSheet/>
+      <defaultEditSheet/>
+      <defaultWeb/>
+      <nameField/>
+      <validationScript/>
+      <cache>
+        <cache>0</cache>
+        <defaultValue>long</defaultValue>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <freeText>forbidden</freeText>
+        <largeStorage>0</largeStorage>
+        <multiSelect>0</multiSelect>
+        <name>cache</name>
+        <number>5</number>
+        <prettyName>Caching policy</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators>|, </separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>long|short|default|forbid</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </cache>
+      <code>
+        <contenttype>PureText</contenttype>
+        <disabled>0</disabled>
+        <editor>PureText</editor>
+        <name>code</name>
+        <number>2</number>
+        <prettyName>Code</prettyName>
+        <restricted>0</restricted>
+        <rows>20</rows>
+        <size>50</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </code>
+      <contentType>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <freeText>forbidden</freeText>
+        <largeStorage>0</largeStorage>
+        <multiSelect>0</multiSelect>
+        <name>contentType</name>
+        <number>6</number>
+        <prettyName>Content Type</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators>|, </separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>CSS|LESS</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </contentType>
+      <name>
+        <disabled>0</disabled>
+        <name>name</name>
+        <number>1</number>
+        <prettyName>Name</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </name>
+      <parse>
+        <disabled>0</disabled>
+        <displayFormType>select</displayFormType>
+        <displayType>yesno</displayType>
+        <name>parse</name>
+        <number>4</number>
+        <prettyName>Parse content</prettyName>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
+      </parse>
+      <use>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <freeText>forbidden</freeText>
+        <largeStorage>0</largeStorage>
+        <multiSelect>0</multiSelect>
+        <name>use</name>
+        <number>3</number>
+        <prettyName>Use this extension</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators>|, </separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>currentPage|onDemand|always</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </use>
+    </class>
+    <property>
+      <cache>long</cache>
+    </property>
+    <property>
+      <code>
+#totpqrcode {
+  border: 1px solid;
+}
+
+#totpactions, #totpqrcode {
+  padding: 30px;
+}</code>
+    </property>
+    <property>
+      <contentType/>
+    </property>
+    <property>
+      <name/>
+    </property>
+    <property>
+      <parse/>
+    </property>
+    <property>
+      <use/>
+    </property>
+  </object>
+  <object>
+    <name>XWiki.MFA.TOTP.UserTOTPSheet</name>
+    <number>0</number>
+    <className>XWiki.UIExtensionClass</className>
+    <guid>fbce7500-8c0e-4f17-b7e1-961b05922d54</guid>
+    <class>
+      <name>XWiki.UIExtensionClass</name>
+      <customClass/>
+      <customMapping/>
+      <defaultViewSheet/>
+      <defaultEditSheet/>
+      <defaultWeb/>
+      <nameField/>
+      <validationScript/>
+      <async_cached>
+        <defaultValue>0</defaultValue>
+        <disabled>0</disabled>
+        <displayFormType>select</displayFormType>
+        <displayType/>
+        <name>async_cached</name>
+        <number>3</number>
+        <prettyName>Cached</prettyName>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
+      </async_cached>
+      <async_context>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <freeText>forbidden</freeText>
+        <largeStorage>0</largeStorage>
+        <multiSelect>1</multiSelect>
+        <name>async_context</name>
+        <number>4</number>
+        <prettyName>Context elements</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator>, </separator>
+        <separators>|, </separators>
+        <size>5</size>
+        <unmodifiable>0</unmodifiable>
+        <values>action=Action|doc.reference=Document|doc.revision|icon.theme=Icon theme|locale=Language|rendering.defaultsyntax=Default syntax|rendering.restricted=Restricted|rendering.targetsyntax=Target syntax|request.base=Request base URL|request.cookies|request.headers|request.parameters=Request parameters|request.remoteAddr|request.session|request.url=Request URL|request.wiki=Request wiki|sheet|user=User|wiki=Wiki</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </async_context>
+      <async_enabled>
+        <defaultValue>0</defaultValue>
+        <disabled>0</disabled>
+        <displayFormType>select</displayFormType>
+        <displayType/>
+        <name>async_enabled</name>
+        <number>2</number>
+        <prettyName>Asynchronous rendering</prettyName>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
+      </async_enabled>
+      <content>
+        <disabled>0</disabled>
+        <editor>Text</editor>
+        <name>content</name>
+        <number>1</number>
+        <prettyName>Executed Content</prettyName>
+        <restricted>0</restricted>
+        <rows>25</rows>
+        <size>120</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </content>
+      <extensionPointId>
+        <disabled>0</disabled>
+        <name>extensionPointId</name>
+        <number>5</number>
+        <prettyName>Extension Point ID</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </extensionPointId>
+      <name>
+        <disabled>0</disabled>
+        <name>name</name>
+        <number>6</number>
+        <prettyName>Extension ID</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </name>
+      <parameters>
+        <contenttype>PureText</contenttype>
+        <disabled>0</disabled>
+        <editor>PureText</editor>
+        <name>parameters</name>
+        <number>7</number>
+        <prettyName>Extension Parameters</prettyName>
+        <restricted>0</restricted>
+        <rows>10</rows>
+        <size>40</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </parameters>
+      <scope>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <freeText>forbidden</freeText>
+        <largeStorage>0</largeStorage>
+        <multiSelect>0</multiSelect>
+        <name>scope</name>
+        <number>8</number>
+        <prettyName>Extension Scope</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators>|, </separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>wiki=Current Wiki|user=Current User|global=Global</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </scope>
+    </class>
+    <property>
+      <async_cached>0</async_cached>
+    </property>
+    <property>
+      <async_context/>
+    </property>
+    <property>
+      <async_enabled>0</async_enabled>
+    </property>
+    <property>
+      <content>{{include reference="XWiki.MFA.TOTP.UserTOTPSheet"/}}
+</content>
+    </property>
+    <property>
+      <extensionPointId>org.xwiki.plaftorm.user.profile.menu</extensionPointId>
+    </property>
+    <property>
+      <name>mfa.totp.userprofilesheet</name>
+    </property>
+    <property>
+      <parameters>id=totp
+icon=shield
+priority=30
+isActive=#if($doc.documentReference==$xcontext.userReference)trye#{else}false#end</parameters>
+    </property>
+    <property>
+      <scope/>
+    </property>
+  </object>
+</xwikidoc>
